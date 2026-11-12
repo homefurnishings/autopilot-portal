@@ -108,6 +108,9 @@ main{padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px)
 .sp img.wide{aspect-ratio:1.91/1} .sp img.square{aspect-ratio:1/1;margin-bottom:12px}
 .sp-link{padding:10px 14px;background:var(--surface-2);font-size:13.5px;font-weight:600}
 .sp-btn{display:inline-block;margin:0 14px 14px;padding:7px 14px;border-radius:16px;border:1px solid var(--line);font-weight:600;font-size:13.5px;color:var(--blue)}
+.sp-subj{font-size:14px;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:10px;margin:0}
+.sp-subj b{color:var(--ink)}
+.sp-cta{background:var(--green);border-color:var(--green);color:#fff;border-radius:6px}
 .post-meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--muted)}
 .post h3{margin:6px 0}
 .post h3 a{color:inherit}
@@ -403,6 +406,7 @@ function previews(p, img){
   if (p.facebook_text) tabs.push(["Facebook", `<div class="sp">${head("Facebook post")}<div class="sp-text">${md(p.facebook_text)}</div>${pic("wide")}<div class="sp-link">Read more on our blog: ${esc(p.title)}</div></div>`]);
   if (p.instagram_text) tabs.push(["Instagram", `<div class="sp">${head("Instagram post")}${pic("square")}<div class="sp-text">${md(p.instagram_text)}</div></div>`]);
   if (p.google_text) tabs.push(["Google", `<div class="sp">${head("Google Business Profile update")}${pic("wide")}<div class="sp-text">${md(p.google_text)}</div><span class="sp-btn">Learn more</span></div>`]);
+  if (p.email_text) tabs.push(["Email", `<div class="sp">${head("Email to your guest list")}<div class="sp-text"><p class="sp-subj">Subject: <b>${esc(p.email_subject || p.title)}</b></p></div>${pic("wide")}<div class="sp-text" style="padding-top:12px">${md(p.email_text)}</div>${p.email_button ? `<span class="sp-btn sp-cta">${esc(p.email_button)}</span>` : ""}</div>`]);
   if (!tabs.length) return "";
   return `<details class="full"><summary>See the full post${tabs.length > 1 ? " and social posts" : ""}</summary>
     <div class="ptabs" role="tablist">${tabs.map((t, i) => `<button class="ptab" role="tab" aria-selected="${i === 0}" data-tab="${i}">${t[0]}</button>`).join("")}</div>
