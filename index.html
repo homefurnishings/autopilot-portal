@@ -61,6 +61,8 @@ main{padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px)
 .grid{display:grid;gap:16px}
 .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.stat .src{font-size:12px;color:var(--muted);margin-top:2px}
 .stat .k{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
 .stat .v{font-family:var(--display);font-size:28px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
 .stat .s{font-size:13.5px;color:var(--muted)}
@@ -174,7 +176,7 @@ td{padding:11px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
   nav a{white-space:nowrap}
   .side-foot{margin-top:0;flex-direction:row;justify-content:space-between}
   .side-foot .help{display:none}
-  .g3{grid-template-columns:1fr 1fr}
+  .g3,.g4{grid-template-columns:1fr 1fr}
   .g2{grid-template-columns:1fr}
   .post{grid-template-columns:1fr}
   .thumb{max-width:260px}
@@ -332,7 +334,7 @@ async function loadClient(){
   D = {
     client: clients.find(c => c.id === cid),
     locations: loc.data || [], posts: posts.data || [], reviews: reviews.data || [],
-    results: (totals.data || []).slice().reverse(), latestByLoc, setupDone: done,
+    results: (totals.data || []).slice().reverse().map(r => ({...r, social_reach: sum(r.facebook_reach, r.instagram_reach)})), latestByLoc, setupDone: done,
     cancelPending: (reqs.data || []).length > 0
   };
 }
@@ -399,7 +401,7 @@ function previews(p, img){
   const tabs = [];
   if (p.body) tabs.push(["Blog", `<div class="article"><h2>${esc(p.title)}</h2>${pic("")}${p.image_credit ? `<p class="credit">${esc(p.image_credit)}</p>` : ""}${md(p.body)}</div>`]);
   if (p.facebook_text) tabs.push(["Facebook", `<div class="sp">${head("Facebook post")}<div class="sp-text">${md(p.facebook_text)}</div>${pic("wide")}<div class="sp-link">Read more on our blog: ${esc(p.title)}</div></div>`]);
-  if (p.instagram_text) tabs.push(["Instagram", `<div class="sp">${head("Instagram post")}${pic("square")}<div class="sp-text"><b>${esc(biz.toLowerCase().replace(/[^a-z0-9]+/g, ""))}</b> ${md(p.instagram_text).replace(/^<p>|<\/p>$/g, "")}</div></div>`]);
+  if (p.instagram_text) tabs.push(["Instagram", `<div class="sp">${head("Instagram post")}${pic("square")}<div class="sp-text">${md(p.instagram_text)}</div></div>`]);
   if (p.google_text) tabs.push(["Google", `<div class="sp">${head("Google Business Profile update")}${pic("wide")}<div class="sp-text">${md(p.google_text)}</div><span class="sp-btn">Learn more</span></div>`]);
   if (!tabs.length) return "";
   return `<details class="full"><summary>See the full post${tabs.length > 1 ? " and social posts" : ""}</summary>
@@ -450,13 +452,20 @@ function chartSVG(rows){
 
 function latest(){
   const r = D.results, last = r.at(-1) || null, prev = r.at(-2) || null;
-  let change = "";
-  if (last && prev && prev.profile_views) {
-    const pct = Math.round((last.profile_views / prev.profile_views - 1) * 100);
-    change = `<span class="${pct >= 0 ? "up" : "down"}">${pct >= 0 ? "▲" : "▼"} ${Math.abs(pct)}%</span> vs. the month before`;
-  }
-  return { last, change, label: last ? monthName(last.month) : "" };
+  const label = last ? monthName(last.month) : "";
+  // change vs. previous month for any metric, or "in <Month>" when there's nothing to compare
+  const change = f => {
+    if (!last || last[f] == null) return label ? "in " + esc(label) : "Your first report is on the way";
+    if (!prev || !prev[f]) return "in " + esc(label);
+    const pct = Math.round((last[f] / prev[f] - 1) * 100);
+    return `<span class="${pct >= 0 ? "up" : "down"}">${pct >= 0 ? "▲" : "▼"} ${Math.abs(pct)}%</span> vs. the month before`;
+  };
+  return { last, change, label };
 }
+
+/* One stat tile */
+const tile = (k, v, s, src) => `<div class="card stat"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div>${src ? `<div class="src">${src}</div>` : ""}</div>`;
+const sum = (...n) => n.every(x => x == null) ? null : n.reduce((a, x) => a + (x || 0), 0);
 
 const RENDER = {
   home(a){
@@ -470,10 +479,11 @@ const RENDER = {
       ${doneN < SETUP.length ? `<div class="card" style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;border-color:var(--amber)">
         <div><h3>Finish setup: ${doneN} of ${SETUP.length} steps done</h3><p class="small muted">A few access steps are still open. We can't post everywhere until they're done.</p></div>
         <a class="btn" href="#setup">Finish setup</a></div>` : ""}
-      <div class="grid g3">
-        <div class="card stat"><div class="k">Google profile views</div><div class="v">${num(L.last?.profile_views)}</div><div class="s">${L.change || (L.label ? "in " + esc(L.label) : "Your first report is on the way")}</div></div>
-        <div class="card stat"><div class="k">Calls from Google</div><div class="v">${num(L.last?.calls)}</div><div class="s">${L.label ? "in " + esc(L.label) : "&nbsp;"}</div></div>
-        <div class="card stat"><div class="k">Posts published</div><div class="v">${published}</div><div class="s">shown in your portal</div></div>
+      <div class="grid g4">
+        ${tile("Website visits", num(L.last?.website_visits), L.change("website_visits"), "From your blog posts")}
+        ${tile("Social reach", num(L.last?.social_reach), L.change("social_reach"), "Facebook + Instagram")}
+        ${tile("Google profile views", num(L.last?.profile_views), L.change("profile_views"), L.last?.calls != null ? `${num(L.last.calls)} calls from Google` : "Search and Maps")}
+        ${tile("Posts published", published, "across all channels", (D.client.channels || []).map(esc).join(" · "))}
       </div>
       ${next ? `<section style="display:flex;flex-direction:column;gap:12px"><h2>Next up</h2>${postCard(next, true)}</section>` : ""}
       <div class="grid g2">
@@ -514,10 +524,17 @@ const RENDER = {
     return `<div class="head"><div><h1>Results</h1><p>${esc(L.label)} report · ${esc(a.name)}</p></div></div>
       ${L.last.summary ? `<div class="summary"><h3 style="margin-bottom:6px">In plain English</h3><p>${esc(L.last.summary)}</p></div>` : ""}
       ${r.length > 1 ? `<div class="card"><h2>Google profile views by month</h2><p class="small muted" style="margin-bottom:10px">How often your business showed up and was viewed on Google Search and Maps.</p>${chartSVG(r)}</div>` : ""}
+      <h2>Website and social</h2>
       <div class="grid g3">
-        <div class="card stat"><div class="k">Calls from Google</div><div class="v">${num(L.last.calls)}</div><div class="s">${esc(L.label)}</div></div>
-        <div class="card stat"><div class="k">Direction requests</div><div class="v">${num(L.last.directions)}</div><div class="s">${esc(L.label)}</div></div>
-        <div class="card stat"><div class="k">Posts published</div><div class="v">${num(L.last.posts_published)}</div><div class="s">blog, Facebook and Google</div></div>
+        ${tile("Website visits", num(L.last.website_visits), L.change("website_visits"), "From your blog posts")}
+        ${tile("Facebook reach", num(L.last.facebook_reach), L.change("facebook_reach"), "People who saw your posts")}
+        ${tile("Instagram reach", num(L.last.instagram_reach), L.change("instagram_reach"), "People who saw your posts")}
+      </div>
+      <h2>Google</h2>
+      <div class="grid g3">
+        ${tile("Calls from Google", num(L.last.calls), L.change("calls"))}
+        ${tile("Direction requests", num(L.last.directions), L.change("directions"))}
+        ${tile("Posts published", num(L.last.posts_published), "in " + esc(L.label), (D.client.channels || []).map(esc).join(" · "))}
       </div>`;
   },
   locations(){
