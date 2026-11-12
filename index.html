@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Marketing Autopilot Portal</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#f6f7f4; --surface:#ffffff; --surface-2:#eff5ef;
+  --ink:#24302a; --muted:#5d6862; --line:#e1e5df;
+  --green:#4c8c5b; --green-dark:#2f5c3b; --green-soft:#dce9dd;
+  --amber:#a86a00; --amber-soft:#fbefd6; --red:#b3402f; --red-soft:#f8e1dc; --blue:#2f6690; --blue-soft:#e0ecf5;
+  --display:'Poppins','Segoe UI',system-ui,sans-serif;
+  --body:'Source Sans 3','Segoe UI',system-ui,sans-serif;
+  --radius:8px; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#121614; --surface:#1b211e; --surface-2:#1f2a23;
+  --ink:#e6ece8; --muted:#a3ada7; --line:#2d3631;
+  --green:#6fb07f; --green-dark:#9fd0aa; --green-soft:#24382b;
+  --amber:#e0a53c; --amber-soft:#3a2f1a; --red:#e57e6c; --red-soft:#3c221d; --blue:#7fb3db; --blue-soft:#1d2c38;
+  color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55}
+[hidden]{display:none!important}
+h1,h2,h3{font-family:var(--display);margin:0;line-height:1.25;text-wrap:balance;color:var(--ink)}
+h1{font-size:clamp(22px,3vw,28px)} h2{font-size:18px} h3{font-size:15.5px}
+p{margin:0}
+img{max-width:100%}
+button,select,textarea,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--green);outline-offset:2px}
+
+.shell{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:100vh}
+.side{min-width:0;background:var(--surface);border-right:1px solid var(--line);padding:22px 14px;display:flex;flex-direction:column;gap:18px}
+.brand{display:flex;align-items:center;gap:10px;padding:0 8px}
+.mark{width:34px;height:34px;border-radius:8px;background:var(--green);display:grid;place-items:center;color:#fff;font-family:var(--display);font-weight:700;font-size:12px;flex:none}
+.brand b{font-family:var(--display);font-size:14.5px;display:block;line-height:1.2}
+.brand small{color:var(--muted);font-size:12px}
+.acct label{display:block;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 8px 4px}
+.acct select{width:100%;font-size:14px;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2)}
+nav{min-width:0}
+nav ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+nav a{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 10px;border-radius:6px;color:var(--ink);text-decoration:none;font-weight:500}
+nav a:hover{background:var(--surface-2)}
+nav a[aria-current="page"]{background:var(--green-soft);color:var(--green-dark);font-weight:600}
+.count{background:var(--green);color:#fff;font-size:11.5px;font-weight:700;border-radius:10px;padding:1px 7px}
+.count.warn{background:var(--red)}
+.side-foot{margin-top:auto;font-size:12.5px;color:var(--muted);padding:0 8px;display:flex;flex-direction:column;gap:8px}
+.linkbtn{background:none;border:none;padding:0;color:var(--green-dark);font-weight:600;cursor:pointer;text-align:left;font-size:12.5px}
+
+main{padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));min-width:0}
+.wrap{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.head p{color:var(--muted);margin-top:4px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px}
+.grid{display:grid;gap:16px}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.stat .k{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.stat .v{font-family:var(--display);font-size:28px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+.stat .s{font-size:13.5px;color:var(--muted)}
+.up{color:var(--green)} .down{color:var(--red)}
+
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:12px;white-space:nowrap}
+.chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.c-wait{background:var(--amber-soft);color:var(--amber)}
+.c-ok{background:var(--green-soft);color:var(--green-dark)}
+.c-stop{background:var(--red-soft);color:var(--red)}
+.c-pub{background:var(--blue-soft);color:var(--blue)}
+.c-hold{background:var(--red-soft);color:var(--red)}
+
+.btn{border:1px solid var(--line);background:var(--surface);padding:8px 14px;border-radius:6px;font-weight:600;cursor:pointer;font-size:14px;text-decoration:none;display:inline-block;color:var(--ink)}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--green);border-color:var(--green);color:#fff}
+.btn.primary:hover{background:var(--green-dark);border-color:var(--green-dark)}
+.btn.danger{color:var(--red)}
+.btn:disabled{opacity:.5;cursor:default}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+
+.post{display:grid;grid-template-columns:150px 1fr;gap:18px}
+.thumb{aspect-ratio:4/3;border-radius:6px;max-width:100%;display:grid;place-items:end start;padding:8px;font-size:11px;font-weight:600;color:#fff;background:linear-gradient(160deg,#5b7f6a,#2f3b34);overflow:hidden;position:relative}
+.thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.post-meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--muted)}
+.post h3{margin:6px 0}
+.post h3 a{color:inherit}
+.post .excerpt{color:var(--muted);font-size:14.5px}
+.channels{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.ch{font-size:12px;border:1px solid var(--line);border-radius:4px;padding:2px 8px;color:var(--muted)}
+.post-body{display:flex;flex-direction:column;gap:12px;min-width:0}
+.due{font-size:13px;color:var(--amber);font-weight:600}
+.note{font-size:13.5px;background:var(--surface-2);border-radius:6px;padding:8px 10px}
+textarea,input[type=email]{width:100%;border:1px solid var(--line);border-radius:6px;padding:10px;background:var(--surface-2)}
+textarea{min-height:90px}
+
+.review{display:flex;flex-direction:column;gap:12px}
+.stars{color:var(--amber);letter-spacing:2px}
+.quote{border-left:3px solid var(--line);padding-left:12px;color:var(--ink)}
+.reply{background:var(--surface-2);border-radius:6px;padding:12px 14px;font-size:14.5px}
+.reply b{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--green-dark);display:block;margin-bottom:4px}
+.flag{background:var(--red-soft);color:var(--ink);border-radius:6px;padding:10px 12px;font-size:14px}
+.flag b{color:var(--red)}
+
+.list{list-style:none;margin:0;padding:0}
+.list li{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid var(--line);align-items:center;flex-wrap:wrap}
+.list li:first-child{border-top:none}
+.muted{color:var(--muted)}
+.small{font-size:13.5px}
+.more{color:var(--green-dark);font-weight:600;display:inline-block;margin-top:8px;font-size:13.5px}
+
+.chart{width:100%;height:auto;display:block}
+.summary{background:var(--surface-2);border-left:4px solid var(--green);padding:16px 18px;border-radius:0 6px 6px 0}
+
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14.5px;font-variant-numeric:tabular-nums}
+th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line)}
+td{padding:11px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.step{display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:start;padding:14px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.tick{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-weight:700;font-size:13px}
+.step.done .tick{background:var(--green);border-color:var(--green);color:#fff}
+.step details{margin-top:6px;font-size:14px;color:var(--muted)}
+.step summary{cursor:pointer;color:var(--green-dark);font-weight:600}
+.step ol{margin:6px 0 0;padding-left:18px}
+.progress{height:8px;background:var(--surface-2);border-radius:4px;overflow:hidden}
+.progress span{display:block;height:100%;background:var(--green)}
+
+.plan-row{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.price{font-family:var(--display);font-size:30px;font-weight:700;color:var(--green-dark)}
+.price small{font-size:14px;color:var(--muted);font-weight:500}
+.confirm{border:1px solid var(--red);background:var(--red-soft);border-radius:6px;padding:14px;display:flex;flex-direction:column;gap:10px}
+
+/* Sign-in and status screens */
+.center{min-height:100vh;display:grid;place-items:center;padding:24px}
+.login{width:100%;max-width:400px;display:flex;flex-direction:column;gap:16px}
+.login .brand{padding:0;margin-bottom:6px}
+.login form{display:flex;flex-direction:column;gap:12px}
+.login label{font-weight:600;font-size:14px}
+.err{color:var(--red);font-size:14px}
+
+.toast{position:fixed;right:max(20px,calc(env(safe-area-inset-right,0px) + 20px));bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:6px;font-weight:600;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.2);opacity:0;transform:translateY(8px);transition:.2s;pointer-events:none;max-width:calc(100vw - 40px)}
+.toast.show{opacity:1;transform:none}
+
+@media (max-width:860px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .side{border-right:none;border-bottom:1px solid var(--line);padding:14px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));gap:12px}
+  nav ul{flex-direction:row;overflow-x:auto;gap:4px;padding-bottom:4px}
+  nav a{white-space:nowrap}
+  .side-foot{margin-top:0;flex-direction:row;justify-content:space-between}
+  .side-foot .help{display:none}
+  .g3{grid-template-columns:1fr 1fr}
+  .g2{grid-template-columns:1fr}
+  .post{grid-template-columns:1fr}
+  .thumb{max-width:260px}
+}
+@media (max-width:520px){.g3{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+
+<!-- Status screen: loading / not configured / no access -->
+<div class="center" id="status-screen"><div class="login" id="status-box"><p class="muted">Loading…</p></div></div>
+
+<!-- Sign-in screen -->
+<div class="center" id="login-screen" hidden>
+  <div class="login card">
+    <div class="brand"><div class="mark">CdDi</div><div><b>Marketing Autopilot</b><small>by CdDi Marketing</small></div></div>
+    <div id="login-form-wrap">
+      <h1 style="margin-bottom:6px">Sign in</h1>
+      <p class="muted small" style="margin-bottom:14px">Enter the email we set your account up with. We'll send you a link, so there's no password to remember.</p>
+      <form id="login-form">
+        <label for="login-email">Email</label>
+        <input type="email" id="login-email" autocomplete="email" required>
+        <button class="btn primary" type="submit" id="login-btn">Email me a sign-in link</button>
+        <p class="err" id="login-err" hidden></p>
+      </form>
+    </div>
+    <div id="login-sent" hidden>
+      <h1 style="margin-bottom:6px">Check your email</h1>
+      <p class="muted">We sent a sign-in link to <b id="sent-to"></b>. Open it on this device to sign in. The link expires in an hour.</p>
+      <button class="linkbtn" id="login-again" style="margin-top:12px">Use a different email</button>
+    </div>
+  </div>
+</div>
+
+<!-- Portal -->
+<div class="shell" id="app" hidden>
+  <aside class="side">
+    <div class="brand"><div class="mark">CdDi</div><div><b>Marketing Autopilot</b><small>by CdDi Marketing</small></div></div>
+    <div class="acct" id="acct-wrap" hidden>
+      <label for="acct">Viewing account</label>
+      <select id="acct"></select>
+    </div>
+    <nav aria-label="Portal"><ul id="nav"></ul></nav>
+    <div class="side-foot">
+      <span class="help">Questions? Reply to any preview email.</span>
+      <span><span id="who"></span><br><button class="linkbtn" id="signout">Sign out</button></span>
+    </div>
+  </aside>
+  <main><div class="wrap" id="view"></div></main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ================================================================
+   SETUP: paste your Supabase values here
+   (Supabase > Project Settings > API). The anon/publishable key is
+   meant to be public; your data is protected by the database rules.
+   NEVER paste the service_role / secret key here.
+   ================================================================ */
+const SUPABASE_URL = "https://hnxolitcqpbsufitemyd.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_gw3pknugJ3dEWHv6xyA1Gw_612XGZM8";
+
+const CONFIGURED = /^https:\/\//.test(SUPABASE_URL) && !SUPABASE_ANON_KEY.startsWith("PASTE");
+const sb = CONFIGURED ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+const SETUP = [
+  {t:"Tell us about your business",d:"Services, service area, tone and anything we should never mention.",how:["Fill out the 10-minute questionnaire.","Upload a logo and any photos you'd like us to use."]},
+  {t:"Add us as an Author on your WordPress site",d:"Lets us publish blog posts. We never need your admin password.",how:["In WordPress, go to Users → Add New User.","Enter autopilot@jgsullivan.com and set the role to Author.","Click Add New User."]},
+  {t:"Give us access to your Facebook page",d:"Lets us share each post to your page.",how:["Open Meta Business Suite → Settings → Partners.","Click Add partner and enter the partner ID we send you.","Allow access to create content on your page."]},
+  {t:"Add us as a Manager on Google Business Profile",d:"Lets us post updates and reply to reviews for each location.",how:["Search your business name on Google while signed in.","Open the ⋮ menu → Business Profile settings → Managers.","Add autopilot@jgsullivan.com and choose Manager."]},
+  {t:"Confirm who gets preview emails",d:"This person approves posts and replies to low-rated reviews.",how:["Add one or more email addresses.","Choose whether posts publish automatically after 48 hours."]}
+];
+const VIEWS = ["home","approvals","reviews","results","locations","setup","account"];
+const LABELS = {home:"Overview",approvals:"Upcoming posts",reviews:"Reviews",results:"Results",locations:"Locations",setup:"Setup",account:"Plan & billing"};
+
+let session = null, started = false, clients = [], cid = null, D = null;
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const safeUrl = u => /^https:\/\//i.test(u || "") ? esc(u) : "";
+const num = n => n == null ? "—" : Number(n).toLocaleString();
+const day = ts => new Date(ts).toLocaleDateString(undefined, {weekday:"short", month:"short", day:"numeric"});
+const monthName = (m, style="long") => new Date(m + "T12:00:00").toLocaleString(undefined, {month: style});
+
+function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),3000);}
+function route(){const h=location.hash.slice(1);return VIEWS.includes(h)?h:"home";}
+function show(id){for(const s of ["status-screen","login-screen","app"]) $("#"+s).hidden = s !== id;}
+function status(html){$("#status-box").innerHTML = html; show("status-screen");}
+
+/* ---------- Sign in ---------- */
+function showLogin(){
+  $("#login-form-wrap").hidden = false; $("#login-sent").hidden = true; $("#login-err").hidden = true;
+  show("login-screen");
+}
+$("#login-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const email = $("#login-email").value.trim().toLowerCase(), btn = $("#login-btn");
+  btn.disabled = true; $("#login-err").hidden = true;
+  const { error } = await sb.auth.signInWithOtp({
+    email, options: { shouldCreateUser: false, emailRedirectTo: location.origin + location.pathname }
+  });
+  btn.disabled = false;
+  if (error) {
+    $("#login-err").textContent = /rate|seconds/i.test(error.message)
+      ? "Too many tries. Please wait a minute and try again."
+      : "We couldn't send a link to that address. Check that it's the email your account was set up with, or contact us.";
+    $("#login-err").hidden = false; return;
+  }
+  $("#sent-to").textContent = email; $("#login-form-wrap").hidden = true; $("#login-sent").hidden = false;
+});
+$("#login-again").addEventListener("click", showLogin);
+$("#signout").addEventListener("click", async () => { await sb.auth.signOut(); });
+
+/* ---------- Data ---------- */
+async function start(){
+  started = true;
+  if (/access_token|error_description/.test(location.hash)) history.replaceState(null, "", location.pathname + "#home");
+  status('<p class="muted">Loading your account…</p>');
+  const { data, error } = await sb.from("clients").select("*").order("name");
+  if (error) return status(`<h1>Something went wrong</h1><p class="muted">${esc(error.message)}</p><button class="btn" onclick="location.reload()">Try again</button>`);
+  clients = data;
+  if (!clients.length) {
+    return status(`<div class="card"><h1 style="margin-bottom:8px">No account found</h1>
+      <p class="muted">You're signed in as <b>${esc(session.user.email)}</b>, but that email isn't connected to a Marketing Autopilot account yet. Please contact your CdDi team.</p>
+      <button class="btn" style="margin-top:14px" onclick="sb.auth.signOut()">Sign out</button></div>`);
+  }
+  let saved = null; try { saved = localStorage.getItem("ap-client"); } catch(_){}
+  cid = clients.some(c => c.id === saved) ? saved : clients[0].id;
+  const sel = $("#acct");
+  sel.innerHTML = clients.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
+  sel.value = cid; $("#acct-wrap").hidden = clients.length < 2;
+  $("#who").textContent = session.user.email;
+  await loadClient();
+  show("app"); render();
+}
+
+async function loadClient(){
+  const q = t => sb.from(t).select("*").eq("client_id", cid);
+  const [loc, posts, reviews, totals, locRes, steps, reqs] = await Promise.all([
+    q("locations").order("name"),
+    q("posts").order("publish_on", {ascending:false}).limit(60),
+    q("reviews").order("reviewed_at", {ascending:false}).limit(60),
+    q("monthly_results").is("location_id", null).order("month", {ascending:false}).limit(6),
+    q("monthly_results").not("location_id", "is", null).order("month", {ascending:false}).limit(500),
+    q("setup_steps").order("step"),
+    q("client_requests").eq("kind", "cancel").is("handled_at", null)
+  ]);
+  const err = [loc, posts, reviews, totals, locRes, steps, reqs].find(r => r.error);
+  if (err) { toast("Couldn't load everything: " + err.error.message); }
+  const latestByLoc = {};
+  for (const r of locRes.data || []) if (!latestByLoc[r.location_id]) latestByLoc[r.location_id] = r;
+  const done = [false,false,false,false,false];
+  for (const s of steps.data || []) done[s.step - 1] = s.done;
+  D = {
+    client: clients.find(c => c.id === cid),
+    locations: loc.data || [], posts: posts.data || [], reviews: reviews.data || [],
+    results: (totals.data || []).slice().reverse(), latestByLoc, setupDone: done,
+    cancelPending: (reqs.data || []).length > 0
+  };
+}
+
+async function act(btn, fn, okMsg){
+  btn.disabled = true;
+  const { error } = await fn();
+  if (error) { btn.disabled = false; toast(error.message); return false; }
+  toast(okMsg); await loadClient(); render(); return true;
+}
+
+/* ---------- Rendering ---------- */
+function chip(st){
+  return {waiting:'<span class="chip c-wait">Needs your OK</span>', scheduled:'<span class="chip c-pub">Scheduled</span>',
+    approved:'<span class="chip c-ok">Approved</span>', change_requested:'<span class="chip c-wait">Change requested</span>',
+    stopped:'<span class="chip c-stop">Stopped</span>', published:'<span class="chip c-ok">Published</span>',
+    held:'<span class="chip c-hold">On hold</span>', needs_review:'<span class="chip c-hold">Needs your review</span>',
+    posted:'<span class="chip c-ok">Reply posted</span>', auto:'<span class="chip c-pub">Posts automatically</span>',
+    review_approved:'<span class="chip c-ok">Reply approved</span>'}[st] || "";
+}
+const pending = () => D.posts.filter(p => p.status === "waiting").length;
+const flagged = () => D.reviews.filter(r => r.status === "needs_review").length;
+const multi = () => D.locations.length > 1;
+
+function dueText(p){
+  if (p.status === "scheduled") return "Preview email coming before it publishes";
+  if (p.status !== "waiting") return "";
+  if (!p.auto_publish_at) return "Waiting on your OK";
+  const h = Math.ceil((new Date(p.auto_publish_at) - Date.now()) / 36e5);
+  return h > 0 ? `Publishes in ${h} hour${h === 1 ? "" : "s"} unless you stop it` : "Publishing shortly";
+}
+
+function renderNav(){
+  const cur = route();
+  $("#nav").innerHTML = VIEWS.filter(v => v !== "locations" || multi()).map(v => {
+    let badge = "";
+    if (v === "approvals" && pending()) badge = `<span class="count">${pending()}</span>`;
+    if (v === "reviews" && flagged()) badge = `<span class="count warn">${flagged()}</span>`;
+    return `<li><a href="#${v}" ${v === cur ? 'aria-current="page"' : ""}>${LABELS[v]}${badge}</a></li>`;
+  }).join("");
+}
+
+function postCard(p, full){
+  const img = safeUrl(p.image_url), link = safeUrl(p.post_url), due = dueText(p);
+  const qc = p.quality_check === "held" ? "Held by quality check" : "✓ Quality check passed";
+  return `<article class="card post" data-post="${p.id}">
+    <div class="thumb" aria-hidden="true">${img ? `<img src="${img}" alt="" loading="lazy">` : esc(p.image_credit || "")}</div>
+    <div class="post-body">
+      <div class="post-meta">${chip(p.status)}<span>${day(p.publish_on)}</span>${due ? `<span class="due">${esc(due)}</span>` : ""}</div>
+      <div><h3>${link ? `<a href="${link}" target="_blank" rel="noopener">${esc(p.title)}</a>` : esc(p.title)}</h3>
+      <p class="excerpt">${esc(p.excerpt)}</p>
+      <div class="channels">${(D.client.channels || []).map(c => `<span class="ch">${esc(c)}</span>`).join("")}<span class="ch">${qc}</span></div></div>
+      ${p.status === "change_requested" && p.change_request ? `<p class="note"><b>Your request:</b> ${esc(p.change_request)}</p>` : ""}
+      ${full && p.status === "waiting" ? `<div class="actions">
+        <button class="btn primary" data-act="approve">Approve</button>
+        <button class="btn" data-act="edit">Request a change</button>
+        <button class="btn danger" data-act="stop">Stop this post</button></div>
+        <div class="editbox" hidden><label class="small muted" for="edit-${p.id}">What should we change?</label>
+        <textarea id="edit-${p.id}" maxlength="2000" placeholder="For example: mention our free estimates"></textarea>
+        <div class="actions" style="margin-top:8px"><button class="btn primary" data-act="send">Send to our team</button><button class="btn" data-act="cancel">Cancel</button></div></div>` : ""}
+    </div></article>`;
+}
+
+function chartSVG(rows){
+  const v = rows.map(r => r.profile_views || 0), m = rows.map(r => monthName(r.month, "short"));
+  const w=640,h=200,p={l:44,r:14,t:16,b:30};
+  const max = Math.max(100, Math.ceil(Math.max(...v)*1.15/100)*100);
+  const x = i => p.l + i*(w-p.l-p.r)/(v.length-1);
+  const y = n => p.t + (1-n/max)*(h-p.t-p.b);
+  const pts = v.map((n,i) => `${x(i)},${y(n)}`).join(" ");
+  return `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="Google profile views by month">
+    ${[0,max/2,max].map(t => `<line x1="${p.l}" x2="${w-p.r}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line)"/>
+      <text x="${p.l-8}" y="${y(t)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${t.toLocaleString()}</text>`).join("")}
+    <polygon points="${p.l},${y(0)} ${pts} ${x(v.length-1)},${y(0)}" fill="var(--green-soft)" opacity=".8"/>
+    <polyline points="${pts}" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linejoin="round"/>
+    ${v.map((n,i) => `<circle cx="${x(i)}" cy="${y(n)}" r="${i===v.length-1?5:3}" fill="var(--green)"/>
+      <text x="${x(i)}" y="${h-10}" text-anchor="middle" font-size="11.5" fill="var(--muted)">${esc(m[i])}</text>`).join("")}
+    <text x="${x(v.length-1)-8}" y="${y(v.at(-1))-10}" text-anchor="end" font-size="12" font-weight="700" fill="var(--ink)">${v.at(-1).toLocaleString()}</text>
+  </svg>`;
+}
+
+function latest(){
+  const r = D.results, last = r.at(-1) || null, prev = r.at(-2) || null;
+  let change = "";
+  if (last && prev && prev.profile_views) {
+    const pct = Math.round((last.profile_views / prev.profile_views - 1) * 100);
+    change = `<span class="${pct >= 0 ? "up" : "down"}">${pct >= 0 ? "▲" : "▼"} ${Math.abs(pct)}%</span> vs. the month before`;
+  }
+  return { last, change, label: last ? monthName(last.month) : "" };
+}
+
+const RENDER = {
+  home(a){
+    const next = D.posts.filter(p => p.status === "waiting").at(-1) || D.posts.filter(p => p.status === "scheduled").at(-1);
+    const L = latest(), doneN = D.setupDone.filter(Boolean).length;
+    const published = D.posts.filter(p => p.status === "published").length;
+    const hr = new Date().getHours(), greet = hr < 12 ? "Good morning" : hr < 17 ? "Good afternoon" : "Good evening";
+    const open = D.reviews.filter(r => r.status === "needs_review" || r.status === "auto");
+    return `<div class="head"><div><h1>${greet}</h1><p>${esc(a.name)}${a.city ? " · " + esc(a.city) : ""}</p></div>
+      ${pending() ? `<a class="btn primary" href="#approvals">Review ${pending()} post${pending() > 1 ? "s" : ""}</a>` : ""}</div>
+      ${doneN < SETUP.length ? `<div class="card" style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;border-color:var(--amber)">
+        <div><h3>Finish setup: ${doneN} of ${SETUP.length} steps done</h3><p class="small muted">A few access steps are still open. We can't post everywhere until they're done.</p></div>
+        <a class="btn" href="#setup">Finish setup</a></div>` : ""}
+      <div class="grid g3">
+        <div class="card stat"><div class="k">Google profile views</div><div class="v">${num(L.last?.profile_views)}</div><div class="s">${L.change || (L.label ? "in " + esc(L.label) : "Your first report is on the way")}</div></div>
+        <div class="card stat"><div class="k">Calls from Google</div><div class="v">${num(L.last?.calls)}</div><div class="s">${L.label ? "in " + esc(L.label) : "&nbsp;"}</div></div>
+        <div class="card stat"><div class="k">Posts published</div><div class="v">${published}</div><div class="s">shown in your portal</div></div>
+      </div>
+      ${next ? `<section style="display:flex;flex-direction:column;gap:12px"><h2>Next up</h2>${postCard(next, true)}</section>` : ""}
+      <div class="grid g2">
+        <div class="card"><h2 style="margin-bottom:10px">Reviews needing attention</h2>
+          <ul class="list">${open.slice(0,5).map(r => `<li><span><span class="stars" aria-label="${r.stars} stars">${"★".repeat(r.stars)}</span> ${esc(r.reviewer)}</span>${chip(r.status)}</li>`).join("") || '<li class="muted">All caught up.</li>'}</ul>
+          <a href="#reviews" class="more">See all reviews</a></div>
+        <div class="card"><h2 style="margin-bottom:10px">${L.label ? esc(L.label) : "This month"}</h2>
+          <p class="small">${L.last?.summary ? esc(L.last.summary) : "Your first monthly summary will appear here after your first full month."}</p>
+          <a href="#results" class="more">See full results</a></div>
+      </div>`;
+  },
+  approvals(){
+    const upcoming = D.posts.filter(p => p.status !== "published").reverse();
+    const done = D.posts.filter(p => p.status === "published").slice(0, 10);
+    return `<div class="head"><div><h1>Upcoming posts</h1><p>Each post goes through our quality check, then comes to you. Approve it, request a change, or do nothing and it publishes after 48 hours.</p></div></div>
+      ${upcoming.map(p => postCard(p, true)).join("") || '<div class="card muted">No upcoming posts right now.</div>'}
+      <h2>Recently published</h2>${done.map(p => postCard(p, false)).join("") || '<p class="muted">Nothing published yet.</p>'}`;
+  },
+  reviews(){
+    const locName = id => D.locations.find(l => l.id === id)?.name;
+    return `<div class="head"><div><h1>Reviews</h1><p>We draft a reply to every Google review. 4 and 5 star replies post automatically. Low ratings always wait for you.</p></div></div>
+      ${D.reviews.map(r => {
+        const st = r.status === "approved" ? "review_approved" : r.status, ln = locName(r.location_id);
+        return `<article class="card review" data-review="${r.id}">
+        <div class="post-meta">${chip(st)}<span>${day(r.reviewed_at)}</span></div>
+        <div><span class="stars" aria-label="${r.stars} out of 5 stars">${"★".repeat(r.stars)}${"☆".repeat(5 - r.stars)}</span> <b>${esc(r.reviewer)}</b>${ln && multi() ? ` <span class="muted small">· ${esc(ln)}</span>` : ""}</div>
+        ${r.review_text ? `<p class="quote">${esc(r.review_text)}</p>` : ""}
+        ${r.status === "needs_review" && r.hold_note ? `<div class="flag"><b>Held for you.</b> ${esc(r.hold_note)}</div>` : ""}
+        ${r.reply ? `<div class="reply"><b>${r.status === "posted" ? "Reply posted" : r.status === "approved" ? "Approved reply (posting to Google)" : "Drafted reply"}</b>${esc(r.reply)}</div>` : ""}
+        ${r.status === "auto" || r.status === "needs_review" ? `<div class="actions"><button class="btn primary" data-ract="post">${r.status === "auto" ? "Approve now" : "Approve reply"}</button><button class="btn" data-ract="edit">Edit reply</button></div>
+          <div class="editbox" hidden><label class="small muted" for="r-${r.id}">Edit the reply</label><textarea id="r-${r.id}" maxlength="2000">${esc(r.reply)}</textarea>
+          <div class="actions" style="margin-top:8px"><button class="btn primary" data-ract="save">Save and approve</button><button class="btn" data-ract="cancel">Cancel</button></div></div>` : ""}
+      </article>`;}).join("") || '<div class="card muted">No reviews yet. New Google reviews will show up here with a drafted reply.</div>'}`;
+  },
+  results(a){
+    const L = latest(), r = D.results;
+    if (!L.last) return `<div class="head"><div><h1>Results</h1></div></div><div class="card muted">Your first monthly report will appear here after your first full month.</div>`;
+    return `<div class="head"><div><h1>Results</h1><p>${esc(L.label)} report · ${esc(a.name)}</p></div></div>
+      ${L.last.summary ? `<div class="summary"><h3 style="margin-bottom:6px">In plain English</h3><p>${esc(L.last.summary)}</p></div>` : ""}
+      ${r.length > 1 ? `<div class="card"><h2>Google profile views by month</h2><p class="small muted" style="margin-bottom:10px">How often your business showed up and was viewed on Google Search and Maps.</p>${chartSVG(r)}</div>` : ""}
+      <div class="grid g3">
+        <div class="card stat"><div class="k">Calls from Google</div><div class="v">${num(L.last.calls)}</div><div class="s">${esc(L.label)}</div></div>
+        <div class="card stat"><div class="k">Direction requests</div><div class="v">${num(L.last.directions)}</div><div class="s">${esc(L.label)}</div></div>
+        <div class="card stat"><div class="k">Posts published</div><div class="v">${num(L.last.posts_published)}</div><div class="s">blog, Facebook and Google</div></div>
+      </div>`;
+  },
+  locations(){
+    const st = {active:'<span class="chip c-ok">Active</span>', needs_review:'<span class="chip c-hold">Review waiting</span>', setup:'<span class="chip c-wait">Waiting on Google access</span>'};
+    return `<div class="head"><div><h1>Locations</h1><p>${D.locations.length} locations. Each gets its own Google posts and review replies, with one approval contact for all of them.</p></div></div>
+      <div class="card table-wrap"><table><thead><tr><th>Location</th><th>Status</th><th>Posts last month</th><th>New reviews</th><th>Profile views</th></tr></thead>
+      <tbody>${D.locations.map(l => { const m = D.latestByLoc[l.id] || {};
+        return `<tr><td><b>${esc(l.name)}</b></td><td>${st[l.status] || ""}</td><td>${num(m.posts_published)}</td><td>${num(m.new_reviews)}</td><td>${num(m.profile_views)}</td></tr>`; }).join("")}</tbody></table></div>`;
+  },
+  setup(){
+    const n = D.setupDone.filter(Boolean).length;
+    return `<div class="head"><div><h1>Setup</h1><p>About 15 minutes. You'll never need to share a password.</p></div></div>
+      <div class="card"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><b>${n} of ${SETUP.length} complete</b><span class="muted small">${Math.round(n / SETUP.length * 100)}%</span></div>
+      <div class="progress"><span style="width:${n / SETUP.length * 100}%"></span></div></div>
+      <ol class="steps">${SETUP.map((s, i) => `<li class="step ${D.setupDone[i] ? "done" : ""}">
+        <div class="tick">${D.setupDone[i] ? "✓" : i + 1}</div>
+        <div><h3>${esc(s.t)}</h3><p class="small muted">${esc(s.d)}</p>
+        <details ${D.setupDone[i] ? "" : "open"}><summary>How to do this</summary><ol>${s.how.map(h => `<li>${esc(h)}</li>`).join("")}</ol></details></div>
+        <div>${D.setupDone[i] ? '<span class="chip c-ok">Done</span>' : `<button class="btn primary" data-step="${i + 1}">Mark done</button>`}</div></li>`).join("")}</ol>`;
+  },
+  account(a){
+    const next = a.next_charge_on ? new Date(a.next_charge_on + "T12:00:00").toLocaleDateString(undefined, {month:"short", day:"numeric"}) : null;
+    return `<div class="head"><div><h1>Plan &amp; billing</h1><p>Month to month. Change or cancel anytime.</p></div></div>
+      <div class="card plan-row"><div><div class="small muted">CURRENT PLAN</div><h2>${esc(a.plan)}</h2><p class="small muted">Billed monthly through Zoho.${next ? " Next charge " + esc(next) + "." : ""}</p></div>
+        ${a.monthly_price != null ? `<div class="price">$${num(a.monthly_price)}<small>/mo</small></div>` : ""}</div>
+      <div class="grid g3">
+        <div class="card"><h3>Starter</h3><p class="price" style="font-size:22px">$149<small>/mo</small></p><p class="small muted">4 blog posts, Facebook and Google posts, approval emails.</p></div>
+        <div class="card"><h3>Growth</h3><p class="price" style="font-size:22px">$249<small>/mo</small></p><p class="small muted">Adds review replies, weekly Google posts and monthly reports.</p></div>
+        <div class="card"><h3>Pro</h3><p class="price" style="font-size:22px">$399+<small>/mo</small></p><p class="small muted">Adds Google Ads management. Ad spend billed separately.</p></div>
+      </div>
+      <p class="small muted">Want to change plans or add a location? Reply to any preview email and we'll take care of it. Additional locations are $50/month each.</p>
+      <div class="card"><h2 style="margin-bottom:10px">Billing</h2>
+        <ul class="list"><li><span>Invoices and payment method</span><span class="muted">Emailed to you from Zoho</span></li></ul></div>
+      <div class="card" id="cancel-card"><h2 style="margin-bottom:6px">Cancel</h2>
+        ${D.cancelPending ? `<p class="small">We received your cancellation request and will confirm by email.</p>` : `
+        <p class="small muted" style="margin-bottom:12px">Your posts stay on your website and pages. Service runs through the end of the month you've paid for.</p>
+        <button class="btn danger" id="cancel-btn">Cancel my plan</button>
+        <div class="confirm" id="cancel-confirm" hidden><b>Cancel ${esc(a.plan)}?</b><p class="small">We'll confirm by email and stop scheduling new posts after your current paid month.</p>
+          <div class="actions"><button class="btn danger" id="cancel-yes">Yes, cancel</button><button class="btn" id="cancel-no">Keep my plan</button></div></div>`}</div>`;
+  }
+};
+
+function render(){
+  if (!D) return;
+  let v = route(); if (v === "locations" && !multi()) v = "home";
+  renderNav();
+  $("#view").innerHTML = RENDER[v](D.client);
+  window.scrollTo(0, 0);
+}
+
+/* ---------- Actions ---------- */
+document.addEventListener("click", async e => {
+  const b = e.target.closest("button"); if (!b || !D) return;
+  const pc = b.closest("[data-post]");
+  if (pc && b.dataset.act) {
+    const id = pc.dataset.post, box = pc.querySelector(".editbox"), A = b.dataset.act;
+    if (A === "approve") return act(b, () => sb.rpc("decide_post", {p_post:id, p_action:"approve"}), "Approved. It will publish as scheduled.");
+    if (A === "stop") return act(b, () => sb.rpc("decide_post", {p_post:id, p_action:"stop"}), "Stopped. This post won't publish.");
+    if (A === "edit") { box.hidden = false; box.querySelector("textarea").focus(); return; }
+    if (A === "cancel") { box.hidden = true; return; }
+    if (A === "send") {
+      const note = box.querySelector("textarea").value.trim();
+      if (!note) return toast("Tell us what to change first.");
+      return act(b, () => sb.rpc("decide_post", {p_post:id, p_action:"change", p_note:note}), "Sent. We'll send a revised preview.");
+    }
+  }
+  const rc = b.closest("[data-review]");
+  if (rc && b.dataset.ract) {
+    const id = rc.dataset.review, box = rc.querySelector(".editbox"), A = b.dataset.ract;
+    if (A === "post") return act(b, () => sb.rpc("approve_review_reply", {p_review:id}), "Approved. The reply will post to Google shortly.");
+    if (A === "edit") { box.hidden = false; box.querySelector("textarea").focus(); return; }
+    if (A === "cancel") { box.hidden = true; return; }
+    if (A === "save") return act(b, () => sb.rpc("approve_review_reply", {p_review:id, p_reply:box.querySelector("textarea").value}), "Saved. The reply will post to Google shortly.");
+  }
+  if (b.dataset.step) return act(b, () => sb.rpc("mark_setup_step", {p_client:cid, p_step:+b.dataset.step}), "Step marked done.");
+  if (b.id === "cancel-btn") { $("#cancel-confirm").hidden = false; b.hidden = true; }
+  if (b.id === "cancel-no") { $("#cancel-confirm").hidden = true; $("#cancel-btn").hidden = false; }
+  if (b.id === "cancel-yes") act(b, () => sb.rpc("request_cancellation", {p_client:cid}), "Request sent. We'll confirm by email.");
+});
+
+$("#acct").addEventListener("change", async e => {
+  cid = e.target.value; try { localStorage.setItem("ap-client", cid); } catch(_){}
+  $("#view").innerHTML = '<p class="muted">Loading…</p>';
+  await loadClient(); render();
+});
+window.addEventListener("hashchange", render);
+
+/* ---------- Boot ---------- */
+if (!CONFIGURED) {
+  status(`<div class="card"><h1 style="margin-bottom:8px">Almost there</h1><p class="muted">Open <b>index.html</b> and paste your Supabase Project URL and anon key into the two lines marked SETUP near the top of the script.</p></div>`);
+} else {
+  sb.auth.onAuthStateChange((event, s) => {
+    session = s;
+    if (s && !started) setTimeout(start, 0);
+    if (!s) { started = false; D = null; setTimeout(showLogin, 0); }
+  });
+}
+</script>
+</body>
+</html>
