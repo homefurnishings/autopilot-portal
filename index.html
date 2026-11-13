@@ -390,9 +390,13 @@ function dueText(p){
   return h > 0 ? `Publishes in ${h} hour${h === 1 ? "" : "s"} unless you stop it` : "Publishing shortly";
 }
 
+/* Demo accounts (name ends in "(Demo)") hide Plan & billing, so prospects don't see a price or a charge date */
+const isDemo = () => /\(Demo\)\s*$/.test(D?.client?.name || "");
+const shown = v => (v !== "locations" || multi()) && (v !== "account" || !isDemo());
+
 function renderNav(){
   const cur = route();
-  $("#nav").innerHTML = VIEWS.filter(v => v !== "locations" || multi()).map(v => {
+  $("#nav").innerHTML = VIEWS.filter(shown).map(v => {
     let badge = "";
     if (v === "approvals" && pending()) badge = `<span class="count">${pending()}</span>`;
     if (v === "reviews" && flagged()) badge = `<span class="count warn">${flagged()}</span>`;
@@ -603,7 +607,7 @@ const RENDER = {
 
 function render(){
   if (!D) return;
-  let v = route(); if (v === "locations" && !multi()) v = "home";
+  let v = route(); if (!shown(v)) v = "home";
   renderNav();
   $("#view").innerHTML = RENDER[v](D.client);
   window.scrollTo(0, 0);
