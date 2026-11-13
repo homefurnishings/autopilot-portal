@@ -120,7 +120,7 @@ main{padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px)
 .post-body{display:flex;flex-direction:column;gap:12px;min-width:0}
 .due{font-size:13px;color:var(--amber);font-weight:600}
 .note{font-size:13.5px;background:var(--surface-2);border-radius:6px;padding:8px 10px}
-textarea,input[type=email]{width:100%;border:1px solid var(--line);border-radius:6px;padding:10px;background:var(--surface-2)}
+textarea,input[type=email],#login-code{width:100%;border:1px solid var(--line);border-radius:6px;padding:10px;background:var(--surface-2)}
 textarea{min-height:90px}
 
 .review{display:flex;flex-direction:column;gap:12px}
@@ -199,18 +199,24 @@ td{padding:11px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
     <div class="brand"><div class="mark">CdDi</div><div><b>Marketing Autopilot</b><small>by CdDi Marketing</small></div></div>
     <div id="login-form-wrap">
       <h1 style="margin-bottom:6px">Sign in</h1>
-      <p class="muted small" style="margin-bottom:14px">Enter the email we set your account up with. We'll send you a link, so there's no password to remember.</p>
+      <p class="muted small" style="margin-bottom:14px">Enter the email we set your account up with. We'll email you a sign-in code, so there's no password to remember.</p>
       <form id="login-form">
         <label for="login-email">Email</label>
         <input type="email" id="login-email" autocomplete="email" required>
-        <button class="btn primary" type="submit" id="login-btn">Email me a sign-in link</button>
+        <button class="btn primary" type="submit" id="login-btn">Email me a sign-in code</button>
         <p class="err" id="login-err" hidden></p>
       </form>
     </div>
     <div id="login-sent" hidden>
       <h1 style="margin-bottom:6px">Check your email</h1>
-      <p class="muted">We sent a sign-in link to <b id="sent-to"></b>. Open it on this device to sign in. The link expires in an hour.</p>
-      <button class="linkbtn" id="login-again" style="margin-top:12px">Use a different email</button>
+      <p class="muted" style="margin-bottom:14px">We sent a sign-in code to <b id="sent-to"></b>. Type it below. It expires in an hour. Don't see it? Check your spam folder.</p>
+      <form id="code-form">
+        <label for="login-code">Sign-in code</label>
+        <input type="text" id="login-code" style="font-size:20px;letter-spacing:4px;text-align:center" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]*" maxlength="12" required>
+        <button class="btn primary" type="submit" id="code-btn">Sign in</button>
+        <p class="err" id="code-err" hidden></p>
+      </form>
+      <button class="linkbtn" id="login-again" style="margin-top:12px">Use a different email or send a new code</button>
     </div>
   </div>
 </div>
@@ -290,6 +296,20 @@ $("#login-form").addEventListener("submit", async e => {
     $("#login-err").hidden = false; return;
   }
   $("#sent-to").textContent = email; $("#login-form-wrap").hidden = true; $("#login-sent").hidden = false;
+  $("#code-err").hidden = true; $("#login-code").value = ""; $("#login-code").focus();
+});
+$("#code-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const email = $("#sent-to").textContent, token = $("#login-code").value.replace(/\D/g, ""), btn = $("#code-btn");
+  btn.disabled = true; $("#code-err").hidden = true;
+  const { error } = await sb.auth.verifyOtp({ email, token, type: "email" });
+  btn.disabled = false;
+  if (error) {
+    $("#code-err").textContent = /expired|invalid/i.test(error.message)
+      ? "That code didn't work. It may have expired or been mistyped. Check it, or send a new code."
+      : "We couldn't sign you in. Please try again or send a new code.";
+    $("#code-err").hidden = false;
+  }
 });
 $("#login-again").addEventListener("click", showLogin);
 $("#signout").addEventListener("click", async () => { await sb.auth.signOut(); });
